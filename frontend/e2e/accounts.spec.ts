@@ -106,4 +106,39 @@ test.describe('Accounts', () => {
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL('/accounts');
   });
+
+  test('should filter accounts by tab and group in All Accounts view', async ({ authenticatedPage: page }) => {
+    // Create a Checking account (Banking group)
+    await page.goto('/accounts/new');
+    await page.getByRole('radio', { name: 'Checking Account' }).click();
+    await page.getByLabel('Account Name *').fill('Filter Test Checking');
+    await page.getByLabel('Financial Institution *').fill('Test Bank');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.waitForURL('/accounts');
+
+    // Create a Cash account (Cash group)
+    await page.goto('/accounts/new');
+    await page.getByRole('radio', { name: 'Cash' }).click();
+    await page.getByLabel('Account Name *').fill('Filter Test Cash');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.waitForURL('/accounts');
+
+    // Verify All Accounts tab shows both accounts with group headers
+    await expect(page.getByRole('button', { name: 'All Accounts' })).toHaveClass(/text-primary-600/);
+    await expect(page.getByText('Filter Test Checking')).toBeVisible();
+    await expect(page.getByText('Filter Test Cash')).toBeVisible();
+    // Verify group headers are visible
+    await expect(page.locator('h2').filter({ hasText: 'Banking' })).toBeVisible();
+    await expect(page.locator('h2').filter({ hasText: 'Cash' })).toBeVisible();
+
+    // Click Banking tab - should only show Banking accounts
+    await page.getByRole('button', { name: 'Banking' }).click();
+    await expect(page.getByText('Filter Test Checking')).toBeVisible();
+    await expect(page.getByText('Filter Test Cash')).not.toBeVisible();
+
+    // Click Cash tab - should only show Cash accounts
+    await page.getByRole('button', { name: 'Cash' }).click();
+    await expect(page.getByText('Filter Test Cash')).toBeVisible();
+    await expect(page.getByText('Filter Test Checking')).not.toBeVisible();
+  });
 });

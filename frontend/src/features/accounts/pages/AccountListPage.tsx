@@ -10,7 +10,7 @@ import { ColumnMappingForm, type MappingResult } from '@/features/import/compone
 const TYPE_CONFIG: Record<string, { label: string; icon: string; iconBg: string; iconColor: string; group: string }> = {
   CHECKING:    { label: 'Checking',    icon: 'fas fa-building-columns', iconBg: 'bg-blue-100',    iconColor: 'text-blue-600',    group: 'Banking' },
   SAVINGS:     { label: 'Savings',     icon: 'fas fa-piggy-bank',       iconBg: 'bg-green-100',   iconColor: 'text-green-600',   group: 'Banking' },
-  CASH:        { label: 'Cash',        icon: 'fas fa-money-bill-wave',  iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', group: 'Banking' },
+  CASH:        { label: 'Cash',        icon: 'fas fa-money-bill-wave',  iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', group: 'Cash' },
   CREDIT_CARD: { label: 'Credit Card', icon: 'fas fa-credit-card',      iconBg: 'bg-orange-100',  iconColor: 'text-orange-600',  group: 'Credit Cards' },
   INVESTMENT:  { label: 'Investment',  icon: 'fas fa-chart-line',       iconBg: 'bg-indigo-100',  iconColor: 'text-indigo-600',  group: 'Investments' },
   LOAN:        { label: 'Loan',        icon: 'fas fa-landmark',         iconBg: 'bg-red-100',     iconColor: 'text-red-600',     group: 'Loans' },
@@ -19,15 +19,17 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; iconBg: string;
 
 const GROUP_CONFIG: Record<string, { icon: string; iconColor: string }> = {
   'Banking':      { icon: 'fas fa-building-columns', iconColor: 'text-blue-600' },
+  'Cash':         { icon: 'fas fa-money-bill-wave',  iconColor: 'text-emerald-600' },
   'Credit Cards': { icon: 'fas fa-credit-card',      iconColor: 'text-purple-600' },
-  'Investments':  { icon: 'fas fa-chart-line',        iconColor: 'text-emerald-600' },
-  'Loans':        { icon: 'fas fa-landmark',          iconColor: 'text-red-600' },
-  'Other':        { icon: 'fas fa-wallet',            iconColor: 'text-gray-600' },
+  'Investments':  { icon: 'fas fa-chart-line',       iconColor: 'text-emerald-600' },
+  'Loans':        { icon: 'fas fa-landmark',         iconColor: 'text-red-600' },
+  'Other':        { icon: 'fas fa-wallet',           iconColor: 'text-gray-600' },
 };
 
 const FILTER_TABS = [
   { key: 'all', label: 'All Accounts' },
   { key: 'Banking', label: 'Banking' },
+  { key: 'Cash', label: 'Cash' },
   { key: 'Credit Cards', label: 'Credit Cards' },
   { key: 'Investments', label: 'Investments' },
   { key: 'Loans', label: 'Loans' },
