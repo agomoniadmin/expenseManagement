@@ -353,12 +353,18 @@ function AccountBalanceItem({ account }: { account: AccountResponse }) {
 
 function TransactionItem({ transaction }: { transaction: RecentTransaction }) {
   const isCredit = transaction.type === 'CREDIT' || transaction.type === 'TRANSFER_IN';
-  const date = new Date(transaction.date);
+  // Parse date as local timezone (not UTC) by appending time
+  const date = new Date(transaction.date + 'T00:00:00');
   const today = new Date();
-  const isToday = date.toDateString() === today.toDateString();
+  // Compare only the date parts (year, month, day) to avoid timezone issues
+  const todayDateStr = today.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+  const txnDateStr = transaction.date; // Already in YYYY-MM-DD format
+  const isToday = txnDateStr === todayDateStr;
+
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
+  const yesterdayDateStr = yesterday.toLocaleDateString('en-CA');
+  const isYesterday = txnDateStr === yesterdayDateStr;
 
   const dateStr = isToday
     ? 'Today'
