@@ -6,6 +6,7 @@ set -e
 
 BASE_URL="${API_URL:-http://localhost:8080}"
 PASS="TestPassword123!"
+TEST_EMAIL="functest+$(date +%s)@example.com"
 
 echo "========================================="
 echo "Expense Management API - Functional Tests"
@@ -33,10 +34,10 @@ echo "$HEALTH" | grep -q '"status":"UP"' && echo "    PASS" || echo "    FAIL"
 
 # Test 2: Register User
 echo ""
-echo "[2] Register User"
+echo "[2] Register User ($TEST_EMAIL)"
 REGISTER=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
     -H "Content-Type: application/json" \
-    -d "{\"email\":\"functest@example.com\",\"password\":\"$PASS\",\"firstName\":\"Func\",\"lastName\":\"Test\"}")
+    -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$PASS\",\"firstName\":\"Func\",\"lastName\":\"Test\"}")
 echo "    Response: $(echo $REGISTER | head -c 200)"
 ACCESS_TOKEN=$(echo $REGISTER | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])" 2>/dev/null || echo "FAILED")
 if [ "$ACCESS_TOKEN" != "FAILED" ]; then
@@ -51,7 +52,7 @@ echo ""
 echo "[3] Login"
 LOGIN=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
     -H "Content-Type: application/json" \
-    -d "{\"email\":\"functest@example.com\",\"password\":\"$PASS\"}")
+    -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$PASS\"}")
 echo "    Response: $(echo $LOGIN | head -c 200)"
 echo "$LOGIN" | grep -q 'accessToken' && echo "    PASS" || echo "    FAIL"
 

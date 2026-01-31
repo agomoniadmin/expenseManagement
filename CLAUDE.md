@@ -79,3 +79,61 @@ Multi-stage Dockerfile: `eclipse-temurin:17-jdk` (build) → `eclipse-temurin:17
 ## API Base Paths
 
 All REST endpoints are under `/api/v1/` (auth, accounts, transactions, categories, import, reconciliation, reports). Swagger UI at `/swagger-ui/index.html`. Health check at `/api/health`.
+
+## Frontend
+
+React 18 + TypeScript 5 + Vite 5 single-page application in the `frontend/` directory.
+
+### Frontend Commands
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Dev server (port 3000, proxies /api to localhost:8080)
+npm run dev
+
+# Production build
+npm run build
+
+# E2E tests (requires running backend)
+npx playwright install --with-deps chromium
+npm run test:e2e
+
+# Lint
+npm run lint
+```
+
+### Frontend Architecture
+
+Route-based micro-frontend composition using `React.lazy()` for code splitting.
+
+**Tech stack**: React 18, TypeScript 5, Vite 5, TailwindCSS 3, React Router 6, @tanstack/react-query 5, react-hook-form + zod, recharts, Axios.
+
+**Directory structure**:
+```
+frontend/src/
+├── App.tsx                    # Shell with lazy-loaded routes
+├── main.tsx                   # Entry point (React, Router, QueryClient, AuthProvider)
+├── shared/
+│   ├── api/client.ts         # Axios instance with Bearer token + 401 refresh
+│   ├── auth/                 # AuthContext, AuthProvider (localStorage), AuthGuard
+│   ├── layout/               # AppLayout (sidebar + header + content)
+│   ├── components/           # DataTable, FormField, Modal, LoadingSpinner, etc.
+│   └── types/api.ts          # TypeScript interfaces for all backend DTOs
+└── features/
+    ├── auth/pages/           # LoginPage, RegisterPage
+    ├── dashboard/pages/      # DashboardPage (net worth, cash flow, pie chart)
+    ├── accounts/pages/       # AccountListPage, CreateAccountPage, AccountDetailPage
+    ├── transactions/pages/   # TransactionListPage, CreateTransactionPage, TransferPage
+    ├── categories/pages/     # CategoryTreePage, CategoryMappingsPage
+    ├── import/pages/         # ImportPage (CSV upload), ImportJobDetailPage
+    ├── reconciliation/pages/ # ReconciliationPage (side-by-side candidates)
+    └── reports/pages/        # ReportsPage (charts)
+```
+
+### Frontend Docker
+
+Multi-stage Dockerfile: `node:20-alpine` (build) → `nginx:1.25-alpine` (serve). nginx proxies `/api/` to backend `app:8080` and serves SPA with fallback. Frontend runs on port 3000 in docker-compose.

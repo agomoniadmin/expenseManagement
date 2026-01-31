@@ -35,7 +35,7 @@ class AccountServiceTest {
     @Test
     void createAccount_shouldSaveAndReturnResponse() {
         CreateAccountRequest request = new CreateAccountRequest(
-                "CHECKING", "Primary Checking", "Chase Bank", "USD", null, null, null);
+                "CHECKING", "Primary Checking", "Chase Bank", "USD", null, null, null, null);
 
         when(accountRepository.save(any(Account.class))).thenAnswer(inv -> {
             Account a = inv.getArgument(0);

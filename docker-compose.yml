@@ -57,5 +57,16 @@ services:
       retries: 3
       start_period: 60s
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: expense-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
 volumes:
   postgres_data:

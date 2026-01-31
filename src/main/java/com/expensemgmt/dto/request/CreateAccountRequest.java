@@ -10,5 +10,6 @@ public record CreateAccountRequest(
     String currency,
     BigDecimal creditLimit,
     Integer statementCloseDay,
-    Integer paymentDueDay
+    Integer paymentDueDay,
+    BigDecimal initialBalance
 ) {}

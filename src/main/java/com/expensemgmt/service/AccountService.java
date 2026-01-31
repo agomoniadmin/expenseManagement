@@ -26,14 +26,18 @@ public class AccountService {
 
     @Transactional
     public AccountResponse createAccount(UUID userId, CreateAccountRequest request) {
+        BigDecimal initialBalance = request.initialBalance() != null ? request.initialBalance() : BigDecimal.ZERO;
+
         Account account = Account.builder()
                 .userId(userId)
                 .userRegion("us-east-1")
                 .accountType(AccountType.valueOf(request.type()))
                 .name(request.name())
                 .institution(request.institution())
-                .currency(request.currency() != null ? request.currency() : "USD")
+                .currency(request.currency() != null && !request.currency().isBlank() ? request.currency() : "USD")
                 .creditLimit(request.creditLimit())
+                .currentBalance(initialBalance)
+                .availableBalance(initialBalance)
                 .build();
 
         account = accountRepository.save(account);

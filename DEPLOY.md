@@ -16,17 +16,19 @@
 
 ### Local Development
 - **Java 17+** (Eclipse Temurin/Adoptium recommended)
+- **Node.js 20+** (for frontend development)
 - **PostgreSQL 16** (local install or Docker)
 - **Redis 7** (optional, for caching)
 - **Git**
 
 ### Docker Deployment
 - **Docker Desktop** (Docker Engine 24+ with Docker Compose V2)
-- No Java installation required
+- No Java or Node.js installation required
 
 ### Verify Prerequisites
 ```bash
 java -version        # Should show 17+
+node -v              # Should show 20+
 docker --version     # Should show 24+
 docker compose version  # Should show v2+
 ```
@@ -99,7 +101,8 @@ docker compose up --build -d
 This starts:
 - **PostgreSQL 16** on port 5432
 - **Redis 7** on port 6379
-- **Application** on port 8080
+- **Backend API** on port 8080
+- **Frontend UI** on port 3000 (nginx reverse-proxies `/api/` to backend)
 
 ### 2. Check Service Status
 ```bash
@@ -110,7 +113,11 @@ docker compose logs -f app    # Follow logs in real-time
 
 ### 3. Verify Deployment
 ```bash
+# Backend API
 curl http://localhost:8080/api/health
+
+# Frontend UI
+open http://localhost:3000
 ```
 
 ### 4. Stop Services
@@ -167,6 +174,29 @@ docker compose up --build -d
 
 # Wait for startup, then run functional tests
 ./scripts/functional-test.sh
+```
+
+### Frontend E2E Tests (Against Running Docker)
+```bash
+cd frontend
+
+# Install Playwright browsers (first time only)
+npx playwright install --with-deps chromium
+
+# Run E2E tests (backend must be running)
+npm run test:e2e
+
+# Run E2E with UI mode
+npm run test:e2e:ui
+```
+
+### Frontend Development
+```bash
+cd frontend
+npm install     # Install dependencies (first time)
+npm run dev     # Dev server at http://localhost:3000 (proxies /api to :8080)
+npm run build   # Production build to dist/
+npm run lint    # ESLint check
 ```
 
 The functional test script exercises all 15 API capabilities:

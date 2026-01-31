@@ -53,7 +53,7 @@ class AccountTransactionIntegrationTest {
     @Order(2)
     void createAccount_shouldReturn201() throws Exception {
         CreateAccountRequest request = new CreateAccountRequest(
-                "CHECKING", "Test Checking", "Test Bank", "USD", null, null, null);
+                "CHECKING", "Test Checking", "Test Bank", "USD", null, null, null, null);
 
         MvcResult result = mockMvc.perform(post("/api/v1/accounts")
                         .header("Authorization", "Bearer " + accessToken)
@@ -115,7 +115,7 @@ class AccountTransactionIntegrationTest {
         // Create second account
         CreateAccountRequest acctReq = new CreateAccountRequest(
                 "CREDIT_CARD", "Test Credit Card", "Test Bank", "USD",
-                new BigDecimal("10000"), null, null);
+                new BigDecimal("10000"), null, null, null);
 
         MvcResult result = mockMvc.perform(post("/api/v1/accounts")
                         .header("Authorization", "Bearer " + accessToken)
