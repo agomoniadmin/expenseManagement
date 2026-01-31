@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '@/shared/api/client';
 import type { TransactionResponse, PageResponse, AccountResponse, CategoryResponse } from '@/shared/types/api';
 import { CurrencyDisplay } from '@/shared/components/CurrencyDisplay';
@@ -127,30 +127,6 @@ export default function TransactionListPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Transactions</h1>
-          <p className="text-sm text-gray-500">View and manage all transactions</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/transactions/transfer"
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm font-medium"
-          >
-            <i className="fas fa-arrow-right-arrow-left" />
-            Transfer
-          </Link>
-          <Link
-            to="/transactions/new"
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition text-sm"
-          >
-            <i className="fas fa-plus" />
-            Add Transaction
-          </Link>
-        </div>
-      </div>
-
       {/* Filters Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">

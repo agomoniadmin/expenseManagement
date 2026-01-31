@@ -72,6 +72,17 @@ export function Header() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
 
+        {/* Transfer Button (only on transactions) */}
+        {basePath === '/transactions' && (
+          <Link
+            to="/transactions/transfer"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm font-medium"
+          >
+            <i className="fas fa-arrow-right-arrow-left" />
+            <span className="hidden sm:inline">Transfer</span>
+          </Link>
+        )}
+
         {/* Quick Add Button - context-aware */}
         <Link
           to={basePath === '/accounts' ? '/accounts/new' : '/transactions/new'}
