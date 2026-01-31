@@ -220,7 +220,9 @@ export default function TransactionListPage() {
             ) : (
               filteredData.map((txn) => {
                 const isIncome = txn.type === 'CREDIT';
-                const isTransfer = txn.type === 'TRANSFER_OUT' || txn.type === 'TRANSFER_IN';
+                const isTransferIn = txn.type === 'TRANSFER_IN';
+                const isTransfer = txn.type === 'TRANSFER_OUT' || isTransferIn;
+                const isPositive = isIncome || isTransferIn;
                 const noCat = !txn.categoryId;
                 const account = accountMap.get(txn.accountId);
                 const catName = txn.categoryId ? categoryMap.get(txn.categoryId) : null;
@@ -288,10 +290,11 @@ export default function TransactionListPage() {
                     <div className="col-span-2 text-right">
                       <p className={`font-semibold text-sm ${
                         isIncome ? 'text-green-600' :
+                        isTransferIn ? 'text-purple-600' :
                         isTransfer ? 'text-gray-700' :
                         'text-red-500'
                       }`}>
-                        {isIncome ? '+' : '-'}
+                        {isPositive ? '+' : '-'}
                         <CurrencyDisplay amount={txn.amount} />
                       </p>
                     </div>
