@@ -2,7 +2,7 @@ import { test, expect } from './auth.fixture';
 
 test.describe('Reconciliation', () => {
   test('should display reconciliation page', async ({ authenticatedPage: page }) => {
-    await page.getByRole('link', { name: 'Reconcile' }).click();
+    await page.getByRole('link', { name: 'Reconciliation' }).click();
     await expect(page.getByRole('heading', { name: 'Reconciliation' })).toBeVisible();
   });
 

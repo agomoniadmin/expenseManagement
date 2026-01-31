@@ -8,9 +8,11 @@ test.describe('Transactions', () => {
   });
 
   test('should create a transaction with line items', async ({ authenticatedPage: page }) => {
-    // Create account first
+    // Create account first - need to select account type first
     await page.goto('/accounts/new');
-    await page.getByLabel('Account Name').fill('Txn Test Account');
+    // Select a checking account type
+    await page.getByText('Checking Account').click();
+    await page.getByLabel('Account Name *').fill('Txn Test Account');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await page.waitForURL('/accounts');
 

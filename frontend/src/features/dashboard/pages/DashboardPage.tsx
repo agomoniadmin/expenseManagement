@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '@/shared/api/client';
-import type { DashboardResponse, TransactionResponse, AccountResponse } from '@/shared/types/api';
+import type { DashboardResponse, RecentTransaction, AccountResponse } from '@/shared/types/api';
 import { CurrencyDisplay } from '@/shared/components/CurrencyDisplay';
 import { LoadingSpinner } from '@/shared/components/LoadingSpinner';
 import {
@@ -19,16 +19,22 @@ import {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function DashboardPage() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: () => api.get<DashboardResponse>('/reports/dashboard').then((r) => r.data),
-  });
+const PERIOD_LABELS: Record<string, string> = {
+  'this-month': 'This month',
+  'last-month': 'Last month',
+  'last-3-months': 'Last 3 months',
+  'last-6-months': 'Last 6 months',
+  'ytd': 'Year to date',
+  'last-year': 'Last year',
+};
 
-  const { data: recentTransactions } = useQuery({
-    queryKey: ['transactions', 'recent'],
-    queryFn: () =>
-      api.get<TransactionResponse[]>('/transactions', { params: { limit: 5 } }).then((r) => r.data),
+export default function DashboardPage() {
+  const [searchParams] = useSearchParams();
+  const period = searchParams.get('period') || 'this-month';
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard', period],
+    queryFn: () => api.get<DashboardResponse>('/reports/dashboard', { params: { period } }).then((r) => r.data),
   });
 
   const { data: accounts } = useQuery({
@@ -47,19 +53,12 @@ export default function DashboardPage() {
     );
   }
 
-  // Prepare cash flow chart data (mock monthly data based on current values)
-  const months = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
-  const cashFlowChartData = months.map((month) => ({
-    month,
-    Income: Math.round(data.cashFlow.income * (0.85 + Math.random() * 0.3)),
-    Expenses: Math.round(data.cashFlow.expenses * (0.8 + Math.random() * 0.4)),
-  }));
-  // Set current month to actual values
-  cashFlowChartData[5] = {
-    month: 'Jan',
-    Income: data.cashFlow.income,
-    Expenses: data.cashFlow.expenses,
-  };
+  // Prepare cash flow chart data from API response
+  const cashFlowChartData = data.monthlyCashFlow?.map((m) => ({
+    month: m.month,
+    Income: m.income,
+    Expenses: m.expenses,
+  })) || [];
 
   // Prepare pie chart data
   const pieData = data.expenseByCategory.map((cat) => ({
@@ -68,8 +67,10 @@ export default function DashboardPage() {
     percent: cat.percent,
   }));
 
-  // Mock action items (in real app, fetch from API)
-  const uncategorizedCount = recentTransactions?.filter((t) => !t.categoryId).length || 0;
+  // Action items - recent transactions from dashboard response don't have categoryId
+  const uncategorizedCount = 0;
+
+  const periodLabel = PERIOD_LABELS[period] || 'Selected period';
 
   return (
     <div className="space-y-6">
@@ -89,7 +90,7 @@ export default function DashboardPage() {
         <SummaryCard
           title="Total Income"
           value={data.cashFlow.income}
-          subtitle="This month"
+          subtitle={periodLabel}
           icon={
             <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -100,7 +101,7 @@ export default function DashboardPage() {
         <SummaryCard
           title="Total Expenses"
           value={data.cashFlow.expenses}
-          subtitle="This month"
+          subtitle={periodLabel}
           icon={
             <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -111,7 +112,7 @@ export default function DashboardPage() {
         <SummaryCard
           title="Net Cash Flow"
           value={data.cashFlow.net}
-          subtitle="Savings this month"
+          subtitle={`Savings - ${periodLabel.toLowerCase()}`}
           valueColor={data.cashFlow.net >= 0 ? 'text-green-600' : 'text-red-600'}
           icon={
             <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,16 +138,20 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={cashFlowChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(val) => `$${Number(val).toLocaleString()}`} />
-              <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {cashFlowChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={cashFlowChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(val) => `$${Number(val).toLocaleString()}`} />
+                <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-gray-500 text-center py-16">No data for selected period.</p>
+          )}
         </div>
 
         {/* Expense by Category Pie */}
@@ -190,7 +195,7 @@ export default function DashboardPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-gray-500 text-center py-8">No expense data yet.</p>
+            <p className="text-sm text-gray-500 text-center py-8">No expense data for selected period.</p>
           )}
         </div>
       </div>
@@ -225,8 +230,8 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {recentTransactions && recentTransactions.length > 0 ? (
-              recentTransactions.slice(0, 4).map((txn) => (
+            {data.recentTransactions && data.recentTransactions.length > 0 ? (
+              data.recentTransactions.slice(0, 4).map((txn) => (
                 <TransactionItem key={txn.id} transaction={txn} />
               ))
             ) : (
@@ -297,7 +302,7 @@ function SummaryCard({
       <p className={`text-2xl font-bold ${valueColor || 'text-gray-800'}`}>
         <CurrencyDisplay amount={value} />
       </p>
-      {change !== undefined && (
+      {change !== undefined && change !== 0 && (
         <p className={`text-sm flex items-center gap-1 mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {change >= 0 ? (
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -308,10 +313,10 @@ function SummaryCard({
               <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
           )}
-          <span>{change >= 0 ? '+' : ''}{change.toFixed(1)}% from last month</span>
+          <span>{change >= 0 ? '+' : ''}{change.toFixed(1)}% from last period</span>
         </p>
       )}
-      {subtitle && !change && <p className="text-sm text-gray-500 mt-2">{subtitle}</p>}
+      {subtitle && <p className="text-sm text-gray-500 mt-2">{subtitle}</p>}
     </div>
   );
 }
@@ -346,8 +351,8 @@ function AccountBalanceItem({ account }: { account: AccountResponse }) {
   );
 }
 
-function TransactionItem({ transaction }: { transaction: TransactionResponse }) {
-  const isCredit = transaction.type === 'CREDIT';
+function TransactionItem({ transaction }: { transaction: RecentTransaction }) {
+  const isCredit = transaction.type === 'CREDIT' || transaction.type === 'TRANSFER_IN';
   const date = new Date(transaction.date);
   const today = new Date();
   const isToday = date.toDateString() === today.toDateString();

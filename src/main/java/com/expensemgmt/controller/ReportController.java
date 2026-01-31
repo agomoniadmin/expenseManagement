@@ -16,7 +16,8 @@ public class ReportController {
     private final SecurityUtil securityUtil;
 
     @GetMapping("/dashboard")
-    public ResponseEntity<DashboardResponse> getDashboard() {
-        return ResponseEntity.ok(reportService.getDashboard(securityUtil.getCurrentUserId()));
+    public ResponseEntity<DashboardResponse> getDashboard(
+            @RequestParam(defaultValue = "this-month") String period) {
+        return ResponseEntity.ok(reportService.getDashboard(securityUtil.getCurrentUserId(), period));
     }
 }

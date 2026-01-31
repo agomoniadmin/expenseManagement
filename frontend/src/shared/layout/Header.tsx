@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/shared/auth/AuthContext';
 
 const pageTitles: Record<string, { title: string; subtitle?: string }> = {
@@ -11,13 +11,29 @@ const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   '/reports': { title: 'Reports', subtitle: 'Analyze your finances' },
 };
 
+const PERIOD_OPTIONS = [
+  { value: 'this-month', label: 'This Month' },
+  { value: 'last-month', label: 'Last Month' },
+  { value: 'last-3-months', label: 'Last 3 Months' },
+  { value: 'last-6-months', label: 'Last 6 Months' },
+  { value: 'ytd', label: 'Year to Date' },
+  { value: 'last-year', label: 'Last Year' },
+];
+
 export function Header() {
   const { user } = useAuth();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const basePath = '/' + (location.pathname.split('/')[1] || 'dashboard');
   const pageInfo = pageTitles[basePath] || { title: 'ExpenseTrack' };
   const firstName = user?.firstName || 'there';
+
+  const currentPeriod = searchParams.get('period') || 'this-month';
+
+  const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSearchParams({ period: e.target.value });
+  };
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
@@ -35,11 +51,16 @@ export function Header() {
       <div className="flex items-center gap-4">
         {/* Time Period Selector (only on dashboard) */}
         {basePath === '/dashboard' && (
-          <select className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
-            <option value="this-month">This Month</option>
-            <option value="last-month">Last Month</option>
-            <option value="last-3-months">Last 3 Months</option>
-            <option value="ytd">Year to Date</option>
+          <select
+            value={currentPeriod}
+            onChange={handlePeriodChange}
+            className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            {PERIOD_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         )}
 
@@ -51,15 +72,15 @@ export function Header() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
 
-        {/* Quick Add Transaction */}
+        {/* Quick Add Button - context-aware */}
         <Link
-          to="/transactions/new"
+          to={basePath === '/accounts' ? '/accounts/new' : '/transactions/new'}
           className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span className="hidden sm:inline">Add Transaction</span>
+          <span className="hidden sm:inline">{basePath === '/accounts' ? 'Add Account' : 'Add Transaction'}</span>
         </Link>
       </div>
 

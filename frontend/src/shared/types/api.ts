@@ -262,6 +262,12 @@ export interface CashFlowSummary {
   net: number;
 }
 
+export interface MonthlyCashFlow {
+  month: string;
+  income: number;
+  expenses: number;
+}
+
 export interface AccountSummary {
   id: string;
   name: string;
@@ -274,9 +280,19 @@ export interface CategoryExpense {
   percent: number;
 }
 
+export interface RecentTransaction {
+  id: string;
+  date: string;
+  merchant: string;
+  amount: number;
+  type: string;
+}
+
 export interface DashboardResponse {
   netWorth: NetWorthSummary;
   cashFlow: CashFlowSummary;
+  monthlyCashFlow: MonthlyCashFlow[];
   accountsSummary: AccountSummary[];
   expenseByCategory: CategoryExpense[];
+  recentTransactions: RecentTransaction[];
 }

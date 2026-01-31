@@ -23,8 +23,8 @@ test.describe('Authentication', () => {
     await page.getByRole('button', { name: 'Create account' }).click();
     await expect(page).toHaveURL('/dashboard');
 
-    // Logout
-    await page.getByRole('button', { name: email }).click();
+    // Logout - click the user profile dropdown in sidebar
+    await page.locator('[data-testid="user-profile-dropdown"]').click();
     await page.getByText('Sign out').click();
     await expect(page).toHaveURL('/login');
 

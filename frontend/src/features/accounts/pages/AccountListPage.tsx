@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '@/shared/api/client';
 import type { AccountResponse, ImportProfileResponse, CreateImportProfileRequest } from '@/shared/types/api';
 import { CurrencyDisplay } from '@/shared/components/CurrencyDisplay';
@@ -133,21 +133,6 @@ export default function AccountListPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Accounts</h1>
-          <p className="text-sm text-gray-500">Manage all your financial accounts</p>
-        </div>
-        <Link
-          to="/accounts/new"
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition"
-        >
-          <i className="fas fa-plus" />
-          Add Account
-        </Link>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
