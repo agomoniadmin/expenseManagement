@@ -17,6 +17,61 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Account Balances')).toBeVisible();
   });
 
+  test('should navigate to transaction details when clicking transaction in Recent Transactions', async ({ authenticatedPage: page }) => {
+    // First create an account
+    await page.goto('/accounts/new');
+    await page.getByRole('radio', { name: 'Checking Account' }).click();
+    await page.getByLabel('Account Name *').fill('Transaction Link Test Account');
+    await page.getByLabel('Financial Institution *').fill('Test Bank');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.waitForURL('/accounts');
+
+    // Create a transaction
+    await page.goto('/transactions/new');
+    await page.locator('select[name="accountId"]').selectOption({ label: 'Transaction Link Test Account' });
+    await page.getByLabel('Merchant').fill('Dashboard Click Test Merchant');
+    await page.getByLabel('Total Amount').fill('123.45');
+    await page.getByRole('button', { name: 'Save Transaction' }).click();
+    await page.waitForURL('/transactions');
+
+    // Go to dashboard
+    await page.goto('/dashboard');
+    await expect(page.getByText('Recent Transactions')).toBeVisible();
+
+    // Click on the transaction merchant name in Recent Transactions card
+    const transactionLink = page.getByRole('link', { name: 'Dashboard Click Test Merchant' });
+    await expect(transactionLink).toBeVisible();
+    await transactionLink.click();
+
+    // Verify we're on the transaction details page
+    await expect(page).toHaveURL(/\/transactions\/[a-f0-9-]+$/);
+    // Use heading selector to be specific
+    await expect(page.getByRole('heading', { name: 'Dashboard Click Test Merchant' })).toBeVisible();
+  });
+
+  test('should navigate to account details when clicking account name in Account Balances', async ({ authenticatedPage: page }) => {
+    // First create an account
+    await page.goto('/accounts/new');
+    await page.getByRole('radio', { name: 'Savings Account' }).click();
+    await page.getByLabel('Account Name *').fill('Dashboard Link Test Account');
+    await page.getByLabel('Financial Institution *').fill('Test Bank');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.waitForURL('/accounts');
+
+    // Go to dashboard
+    await page.goto('/dashboard');
+    await expect(page.getByText('Account Balances')).toBeVisible();
+
+    // Click on the account name in Account Balances card
+    const accountLink = page.getByRole('link', { name: 'Dashboard Link Test Account' });
+    await expect(accountLink).toBeVisible();
+    await accountLink.click();
+
+    // Verify we're on the account details page
+    await expect(page).toHaveURL(/\/accounts\/[a-f0-9-]+$/);
+    await expect(page.getByText('Dashboard Link Test Account')).toBeVisible();
+  });
+
   test('should show Today for transactions created today', async ({ authenticatedPage: page }) => {
     // Create an account first
     await page.goto('/accounts/new');

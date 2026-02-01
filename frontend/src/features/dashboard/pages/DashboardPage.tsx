@@ -339,7 +339,12 @@ function AccountBalanceItem({ account }: { account: AccountResponse }) {
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 truncate">{account.name}</p>
+        <Link
+          to={`/accounts/${account.id}`}
+          className="font-medium text-gray-800 truncate block hover:text-primary-600 hover:underline"
+        >
+          {account.name}
+        </Link>
         <p className="text-xs text-gray-500">{account.institution || account.type}</p>
       </div>
       <CurrencyDisplay
@@ -380,7 +385,12 @@ function TransactionItem({ transaction }: { transaction: RecentTransaction }) {
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 truncate">{transaction.merchant}</p>
+        <Link
+          to={`/transactions/${transaction.id}`}
+          className="font-medium text-gray-800 truncate block hover:text-primary-600 hover:underline"
+        >
+          {transaction.merchant}
+        </Link>
         <p className="text-xs text-gray-500">{dateStr}</p>
       </div>
       <p className={`font-semibold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
