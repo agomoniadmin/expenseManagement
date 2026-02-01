@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "db:reset": "bash ../scripts/reset-test-db.sh",
     "db:demo": "bash ../scripts/setup-demo-data.sh",
+    "db:demo:delete-txns": "bash ../scripts/delete-demo-transactions.sh",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:fresh": "RESET_DB=1 playwright test"

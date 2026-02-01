@@ -78,20 +78,41 @@ fi
 echo "   ✅ Logged in successfully"
 
 # ============================================================================
-# Step 2: Delete existing data for demo user
+# Step 2: Delete existing data for demo user (via database for reliability)
 # ============================================================================
 echo ""
 echo "🗑️  Deleting existing demo data..."
 
-# Get all accounts and delete them (this cascades to transactions)
-ACCOUNTS=$(api_call GET "/accounts")
-ACCOUNT_IDS=$(echo "$ACCOUNTS" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+# Get user ID from database
+USER_ID=$(docker compose exec -T postgres psql -U expense_user -d expense_mgmt -t -c "
+  SELECT id FROM users WHERE email = '$DEMO_EMAIL';
+" 2>/dev/null | tr -d '[:space:]')
 
-for acc_id in $ACCOUNT_IDS; do
-  if [ -n "$acc_id" ]; then
-    api_call DELETE "/accounts/$acc_id" > /dev/null 2>&1 || true
-  fi
-done
+if [ -n "$USER_ID" ]; then
+  # Delete all data for this user via database
+  docker compose exec -T postgres psql -U expense_user -d expense_mgmt -c "
+    -- Delete line items
+    DELETE FROM line_items WHERE transaction_id IN (
+      SELECT id FROM transactions WHERE account_id IN (SELECT id FROM accounts WHERE user_id = '$USER_ID')
+    );
+
+    -- Delete ledger entries
+    DELETE FROM ledger_entries WHERE transaction_id IN (
+      SELECT id FROM transactions WHERE account_id IN (SELECT id FROM accounts WHERE user_id = '$USER_ID')
+    );
+
+    -- Delete domain events
+    DELETE FROM domain_events WHERE aggregate_type = 'TRANSACTION' AND aggregate_id IN (
+      SELECT id FROM transactions WHERE account_id IN (SELECT id FROM accounts WHERE user_id = '$USER_ID')
+    );
+
+    -- Delete transactions
+    DELETE FROM transactions WHERE account_id IN (SELECT id FROM accounts WHERE user_id = '$USER_ID');
+
+    -- Delete accounts
+    DELETE FROM accounts WHERE user_id = '$USER_ID';
+  " > /dev/null 2>&1
+fi
 
 echo "   ✅ Existing data deleted"
 
@@ -110,42 +131,45 @@ echo "📂 Fetching categories..."
 CATEGORIES_JSON=$(api_call GET "/categories")
 
 # Function to find category ID by name (searches nested children too)
+# Works with single-line JSON by extracting id:name pairs
 find_category_id() {
   local name=$1
-  echo "$CATEGORIES_JSON" | grep -B2 "\"name\":\"$name\"" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4
+  # Extract the pattern "id":"uuid","name":"Name" and filter by name
+  echo "$CATEGORIES_JSON" | grep -o '"id":"[^"]*","name":"[^"]*"' | grep "\"name\":\"$name\"" | head -1 | grep -o '"id":"[^"]*"' | cut -d'"' -f4
 }
 
-# Get category IDs
+# Get category IDs - using actual category names from API
 CAT_RENT=$(find_category_id "Rent/Mortgage")
 CAT_GROCERIES=$(find_category_id "Groceries")
 CAT_RESTAURANTS=$(find_category_id "Restaurants")
-CAT_COFFEE=$(find_category_id "Coffee Shops")
-CAT_GAS=$(find_category_id "Gas/Fuel")
-CAT_ELECTRICITY=$(find_category_id "Electricity")
-CAT_WATER=$(find_category_id "Water")
-CAT_INTERNET=$(find_category_id "Internet")
-CAT_PHONE=$(find_category_id "Phone")
-CAT_STREAMING=$(find_category_id "Streaming Services")
+CAT_COFFEE=$(find_category_id "Coffee")
+CAT_GAS=$(find_category_id "Gas")
+CAT_UTILITIES=$(find_category_id "Utilities")
+CAT_SUBSCRIPTIONS=$(find_category_id "Subscriptions")
 CAT_SALARY=$(find_category_id "Salary")
 CAT_CLOTHING=$(find_category_id "Clothing")
 CAT_ELECTRONICS=$(find_category_id "Electronics")
-CAT_GYM=$(find_category_id "Gym/Fitness")
+CAT_GYM=$(find_category_id "Gym")
 CAT_PHARMACY=$(find_category_id "Pharmacy")
-CAT_DOCTOR=$(find_category_id "Doctor Visits")
+CAT_DOCTOR=$(find_category_id "Doctor")
 CAT_PARKING=$(find_category_id "Parking")
-CAT_MOVIES=$(find_category_id "Movies & Events")
-CAT_HOBBIES=$(find_category_id "Hobbies")
-CAT_HOME_MAINT=$(find_category_id "Home Maintenance")
-CAT_CAR_INSURANCE=$(find_category_id "Car Insurance")
+CAT_MOVIES=$(find_category_id "Movies")
+CAT_GAMING=$(find_category_id "Gaming")
+CAT_HOME_MAINT=$(find_category_id "Maintenance")
+CAT_CAR_MAINT=$(find_category_id "Car Maintenance")
 CAT_HEALTH_INSURANCE=$(find_category_id "Health Insurance")
 CAT_HOME_GOODS=$(find_category_id "Home Goods")
-CAT_FOOD_DELIVERY=$(find_category_id "Food Delivery")
 CAT_PUBLIC_TRANSIT=$(find_category_id "Public Transit")
+CAT_MUSIC=$(find_category_id "Music")
+CAT_HOUSING_INSURANCE=$(find_category_id "Insurance")
+CAT_BOOKS=$(find_category_id "Books")
 
 echo "   ✅ Categories loaded"
 echo "      Groceries: $CAT_GROCERIES"
 echo "      Restaurants: $CAT_RESTAURANTS"
 echo "      Salary: $CAT_SALARY"
+echo "      Utilities: $CAT_UTILITIES"
+echo "      Gas: $CAT_GAS"
 
 # ============================================================================
 # Step 4: Create Accounts
@@ -297,16 +321,16 @@ for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
   else
     elec_amt="95.00"
   fi
-  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-18" "Pacific Gas & Electric" "$elec_amt" "DEBIT" "$CAT_ELECTRICITY" "Electricity"
+  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-18" "Pacific Gas & Electric" "$elec_amt" "DEBIT" "$CAT_UTILITIES" "Electricity"
 
   # Water
-  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-20" "City Water Department" 45.00 "DEBIT" "$CAT_WATER" "Water bill"
+  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-20" "City Water Department" 45.00 "DEBIT" "$CAT_UTILITIES" "Water bill"
 
   # Internet
-  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-22" "Xfinity Internet" 79.99 "DEBIT" "$CAT_INTERNET" "Internet service"
+  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-22" "Xfinity Internet" 79.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "Internet service"
 
   # Phone
-  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-25" "T-Mobile" 85.00 "DEBIT" "$CAT_PHONE" "Cell phone"
+  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-25" "T-Mobile" 85.00 "DEBIT" "$CAT_SUBSCRIPTIONS" "Cell phone"
 done
 
 # ------------------------------
@@ -386,7 +410,7 @@ for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
   for day in 07 14 21 28; do
     app_idx=$((RANDOM % ${#DELIVERY_APPS[@]}))
     amt=$(echo "scale=2; 25 + ($RANDOM % 20)" | bc)
-    create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-$day" "${DELIVERY_APPS[$app_idx]}" "$amt" "DEBIT" "$CAT_FOOD_DELIVERY" "Food delivery"
+    create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-$day" "${DELIVERY_APPS[$app_idx]}" "$amt" "DEBIT" "$CAT_RESTAURANTS" "Food delivery"
   done
 done
 
@@ -415,7 +439,7 @@ done
 
 # Car Insurance - quarterly
 for month in 01 04 07 10; do
-  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-15" "Geico Insurance" 385.00 "DEBIT" "$CAT_CAR_INSURANCE" "Auto insurance - quarterly"
+  create_txn "$CHECKING_ID" "$CURRENT_YEAR-$month-15" "Geico Insurance" 385.00 "DEBIT" "$CAT_CAR_MAINT" "Auto insurance - quarterly"
 done
 
 # ------------------------------
@@ -423,11 +447,11 @@ done
 # ------------------------------
 echo "   📺 Creating subscription services..."
 for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
-  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-05" "Netflix" 15.99 "DEBIT" "$CAT_STREAMING" "Netflix subscription"
-  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-08" "Spotify Premium" 10.99 "DEBIT" "$CAT_STREAMING" "Spotify subscription"
-  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-12" "HBO Max" 15.99 "DEBIT" "$CAT_STREAMING" "HBO Max subscription"
-  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-15" "Amazon Prime" 14.99 "DEBIT" "$CAT_STREAMING" "Prime membership"
-  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-20" "YouTube Premium" 13.99 "DEBIT" "$CAT_STREAMING" "YouTube Premium"
+  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-05" "Netflix" 15.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "Netflix subscription"
+  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-08" "Spotify Premium" 10.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "Spotify subscription"
+  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-12" "HBO Max" 15.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "HBO Max subscription"
+  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-15" "Amazon Prime" 14.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "Prime membership"
+  create_txn "$CREDIT_ID" "$CURRENT_YEAR-$month-20" "YouTube Premium" 13.99 "DEBIT" "$CAT_SUBSCRIPTIONS" "YouTube Premium"
 done
 
 # ------------------------------
@@ -509,10 +533,10 @@ create_txn "$CREDIT_ID" "$CURRENT_YEAR-09-10" "Comedy Club" 65.00 "DEBIT" "$CAT_
 create_txn "$CREDIT_ID" "$CURRENT_YEAR-11-28" "Broadway.com" 275.00 "DEBIT" "$CAT_MOVIES" "Theater tickets"
 
 # Hobbies
-create_txn "$CREDIT_ID" "$CURRENT_YEAR-02-20" "Guitar Center" 89.00 "DEBIT" "$CAT_HOBBIES" "Guitar strings and accessories"
-create_txn "$CREDIT_ID" "$CURRENT_YEAR-05-05" "Michaels" 45.67 "DEBIT" "$CAT_HOBBIES" "Art supplies"
-create_txn "$CREDIT_ID" "$CURRENT_YEAR-08-22" "Barnes & Noble" 52.30 "DEBIT" "$CAT_HOBBIES" "Books"
-create_txn "$CREDIT_ID" "$CURRENT_YEAR-10-15" "Steam" 59.99 "DEBIT" "$CAT_HOBBIES" "Video games"
+create_txn "$CREDIT_ID" "$CURRENT_YEAR-02-20" "Guitar Center" 89.00 "DEBIT" "$CAT_MUSIC" "Guitar strings and accessories"
+create_txn "$CREDIT_ID" "$CURRENT_YEAR-05-05" "Michaels" 45.67 "DEBIT" "$CAT_HOME_GOODS" "Art supplies"
+create_txn "$CREDIT_ID" "$CURRENT_YEAR-08-22" "Barnes & Noble" 52.30 "DEBIT" "$CAT_BOOKS" "Books"
+create_txn "$CREDIT_ID" "$CURRENT_YEAR-10-15" "Steam" 59.99 "DEBIT" "$CAT_GAMING" "Video games"
 
 # ------------------------------
 # TRANSFERS (Limited)
